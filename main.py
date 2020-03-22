@@ -20,7 +20,7 @@ from datetime import date
 with open("config.yml", 'r') as ymlfile:
     cfg = yaml.safe_load(ymlfile)
 
-# Путь до лог-файла
+# Имя лог-файла
  
 fh = logging.FileHandler("abbyycase-" +  date.today().strftime("%Y%m%d") + ".log")
 
@@ -87,6 +87,7 @@ def csvfile_processing(file):
         # После парсинга csv в dict используем filter для фильтрации обрабатываемых строк
         for row in filter(filter_lic_risk, csvrows):        
             if row["OSS Registry ID"]:
+                # Если по в строке указан OSS Registry ID отправляем запрос в API сервиса 2 и осуществляем сравнение данных
                 r = requests.get(url = cfg["URL"] + "/" + row["OSS Registry ID"])
                 data = r.json()
                 if data:
@@ -94,6 +95,7 @@ def csvfile_processing(file):
                 else:
                     logger.error("Component with OSS Registy ID = " + row["OSS Registry ID"] + " not found!")
             else:
+                # Создаем сервис, если  OSS Registry ID не указан
                 create_component(row)
                 
     # Перемещаем обработанный csv в архив для разбора возможных проблем
@@ -112,8 +114,10 @@ def main():
         with ZipFile(file, 'r') as zipObj:
             listOfFileNames = zipObj.namelist()
             for fileName in listOfFileNames:
+                # Ищем файл, который соответвует маске и вытаскиваем его из zip в каталог csv_in
                 if re.match(cfg["csvfile_regexp"], fileName):
                     zipObj.extract(fileName, cfg["csv_in"])
+                    # Обрабатываем csv файл
                     csvfile_processing(cfg["csv_in"] + "/" + fileName)
         # В случае успешной обработки отправляем архив в архивный каталог
         os.replace(cfg["zip_in"] + "/" + file, cfg["zip_out"] + "/" + file)
