@@ -32,13 +32,10 @@ formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 fh.setFormatter(formatter)
 logger.addHandler(fh)
 
+# Фильтр по полю License Risk.
+# Возвращает True если значение поля License Risk в переданной строке равно одному из значений в переменной license_risk_filter конфигурационного файла.
+# Возвращает True если license_risk_filter имеет пустое значение и если оно не указано в конфигурации.
 
-'''
-Фильтр по полю License Risk.
-Возвращает True если значение поля License Risk в переданной строке равно одному из значений в переменной license_risk_filter конфигурационного файла.
-
-Возвращает True если license_risk_filter имеет пустое значение и если оно не указано в конфигурации.
-'''
 def filter_lic_risk(row):
     try:
         if cfg["license_risk_filter"]:
@@ -48,30 +45,29 @@ def filter_lic_risk(row):
     except KeyError:
         return True
 
-'''
-Создание компонента/
+# Создание компонента
 
-'''
 def create_component(csv):
         data = {'title': csv["Component name"],
                 'version': csv["Component version name"],
                 'license': csv["License names"].strip("()").split(" AND ")[0],
                 'usage': csv["Usage"]  }
         requests.post(cfg["URL"], json.dumps(data), headers=cfg["headers"])
-'''
 
-
-'''
+# Процедура сравнения
     
 def campare(response, csv):
+    # Сравниваем поля, заданные в конфигурационном файле
     for key,value in cfg["campare_field"].items():
         if response[key] != csv[value]:
             logger.error("Component with OSS Registy ID = " + csv["OSS Registry ID"] + " has error! Field \"" + key + "\" has value from API = [" + response[key] + "], value from file = [" + csv[value] +"]")
     
+    # Сравниваем поле Лензии с массивом лицензий из файла
     csv_licenses = csv["License names"].strip("()").split(" AND ")
     if response["license"] not in csv_licenses:
         logger.error("Component with OSS Registy ID = " + csv["OSS Registry ID"] + " has error! Field \"License\" has value from API = [" + response["license"] + "], value from file = [" + csv["License names"].strip("()") + "]")
     
+    # Сравниваем моле USAGE и обновляем данные в API, если поля не совпадают
     if response["usage"] != csv["Usage"]:
         logger.error("Component with OSS Registy ID = " + csv["OSS Registry ID"] + " has error! Field \"Usage\" has value from API = [" + response["usage"] + "], value from file = [" + csv["Usage"] + "]. Will be updated!")
         data = {'id': response["id"], 
@@ -80,14 +76,15 @@ def campare(response, csv):
                 'license': response["license"],
                 'usage': csv["Usage"]  }
         requests.put(cfg["URL"], json.dumps(data), headers=cfg["headers"])
-'''
-Основной процессинг с csv-файлом.
 
-'''
+# Основной процессинг с csv-файлом.
+
 def csvfile_processing(file):
     with open(file) as csvfile:
         logger.info("Start processing " + file) 
         csvrows = csv.DictReader(csvfile)
+        
+        # После парсинга csv в dict используем filter для фильтрации обрабатываемых строк
         for row in filter(filter_lic_risk, csvrows):        
             if row["OSS Registry ID"]:
                 r = requests.get(url = cfg["URL"] + "/" + row["OSS Registry ID"])
@@ -98,13 +95,12 @@ def csvfile_processing(file):
                     logger.error("Component with OSS Registy ID = " + row["OSS Registry ID"] + " not found!")
             else:
                 create_component(row)
+                
+    # Перемещаем обработанный csv в архив для разбора возможных проблем
     os.replace(file, cfg["csv_out"] + "/" + os.path.basename(file))
     os.rmdir(Path(file).parent.absolute())
 
-'''
-main функция
-
-'''
+# main функция
 
 def main():
     # В каталоге zip_in ищем zip-файлы по маске и сортируем их до дате модификации от старых к новым
