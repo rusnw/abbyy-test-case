@@ -1,5 +1,5 @@
 # Summary
-Проект состоит из скрипта ([main.py](https://github.com/rusnw/abbyy-test-case/blob/master/main.py) ) на языке Python (v3.8) и конфигурационного файла ([config.yml](https://github.com/rusnw/abbyy-test-case/blob/master/config.yml)).
+Проект состоит из скрипта ([main.py](https://github.com/rusnw/abbyy-test-case/blob/master/main.py)) на языке Python (v3.8) и конфигурационного файла ([config.yml](https://github.com/rusnw/abbyy-test-case/blob/master/config.yml)).
 В процессе работы скрипт формирует лог-файл формата abbyycase-YYYYMMDD.log в директории запуска.
 
 # Clone
